@@ -109,6 +109,8 @@ The engine includes a Flask web API for deployment on cloud platforms like Rende
 
 4. **Done!** Your API will be live at `https://your-app.onrender.com`
 
+5. link deployed:- https://hybrid-neuro-symbolic-contradiction.onrender.com/
+
 ### Run Web Interface Locally
 
 ```bash
