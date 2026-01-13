@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contradiction Detection Engine</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-dark: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.8);
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --border: rgba(100, 116, 139, 0.3);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: fadeInUp 0.8s ease-out;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .icon {
+            font-size: 1.5rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            top: 2px;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Upload area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 0.75rem;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(15, 23, 42, 0.4);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        /* Textarea */
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(100, 116, 139, 0.3);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(100, 116, 139, 0.5);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        /* Slider */
+        .slider-group {
+            margin: 1.5rem 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(100, 116, 139, 0.3);
+            border-radius: 3px;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(99, 102, 241, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        /* Results */
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-item {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Contradiction cards */
+        .contradiction-list {
+            margin-top: 2rem;
+        }
+
+        .contradiction-item {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .contradiction-item:hover {
+            border-color: var(--danger);
+            box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
+        }
+
+        .contradiction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+
+        .contradiction-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--danger);
+        }
+
+        .contradiction-delta {
+            background: var(--danger);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .contradiction-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .contradiction-item.expanded .contradiction-details {
+            max-height: 500px;
+        }
+
+        .detail-row {
+            margin: 0.75rem 0;
+            padding: 0.75rem;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 0.5rem;
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Contradiction Detection Engine</h1>
+            <p class="subtitle">AI-powered narrative consistency analyzer</p>
+        </header>
+
+        <div class="card">
+            <h2 class="card-title">
+                <span class="icon">📝</span>
+                Input Text
+            </h2>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="upload">Upload File</button>
+                <button class="tab" data-tab="text">Paste Text</button>
+                <button class="tab" data-tab="sample">Use Sample</button>
+            </div>
+
+            <!-- File Upload Tab -->
+            <div class="tab-content active" id="upload">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <h3>Drop your text file here</h3>
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem;">
+                        or click to browse (max 5MB, .txt files only)
+                    </p>
+                    <input type="file" id="fileInput" accept=".txt" style="display: none;">
+                </div>
+                <p id="fileName" style="margin-top: 1rem; color: var(--text-secondary);"></p>
+            </div>
+
+            <!-- Text Input Tab -->
+            <div class="tab-content" id="text">
+                <textarea id="textInput" placeholder="Paste your narrative text here..."></textarea>
+            </div>
+
+            <!-- Sample Tab -->
+            <div class="tab-content" id="sample">
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    Load a sample text with intentional contradictions for testing.
+                </p>
+                <button class="btn btn-secondary" id="loadSampleBtn">
+                    Load Sample Text
+                </button>
+            </div>
+
+            <!-- Threshold Slider -->
+            <div class="slider-group">
+                <div class="slider-label">
+                    <span>Detection Threshold</span>
+                    <span id="thresholdValue">0.5</span>
+                </div>
+                <input type="range" id="threshold" min="0.3" max="0.9" step="0.1" value="0.5">
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">
+                    Lower = more sensitive (may find false positives) | Higher = more strict (may miss some)
+                </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="button-group">
+                <button class="btn btn-primary" id="detectBtn">
+                    <span>🔍</span>
+                    Detect Contradictions
+                </button>
+                <button class="btn btn-secondary" id="clearBtn">
+                    Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing narrative for contradictions...</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">
+                This may take a few moments
+            </p>
+        </div>
+
+        <!-- Results -->
+        <div class="results card" id="results">
+            <h2 class="card-title">
+                <span class="icon">📊</span>
+                Results
+            </h2>
+
+            <div id="statusBadge"></div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="wordCount">0</div>
+                    <div class="stat-label">Words Analyzed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="claimsCount">0</div>
+                    <div class="stat-label">Claims Extracted</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="contradictionsCount">0</div>
+                    <div class="stat-label">Contradictions Found</div>
+                </div>
+            </div>
+
+            <div id="contradictionList" class="contradiction-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                tab.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // Threshold slider
+        const thresholdSlider = document.getElementById('threshold');
+        const thresholdValue = document.getElementById('thresholdValue');
+
+        thresholdSlider.addEventListener('input', (e) => {
+            thresholdValue.textContent = e.target.value;
+        });
+
+        // File upload
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        let selectedFile = null;
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.name.endsWith('.txt')) {
+                alert('Please upload a .txt file');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+        }
+
+        // Load sample text
+        document.getElementById('loadSampleBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/sample');
+                const data = await response.json();
+
+                document.getElementById('textInput').value = data.text;
+
+                // Switch to text tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelector('[data-tab="text"]').classList.add('active');
+                document.getElementById('text').classList.add('active');
+            } catch (error) {
+                alert('Failed to load sample text');
+            }
+        });
+
+        // Detect contradictions
+        document.getElementById('detectBtn').addEventListener('click', async () => {
+            const textInput = document.getElementById('textInput').value;
+            const threshold = parseFloat(thresholdSlider.value);
+
+            if (!selectedFile && !textInput.trim()) {
+                alert('Please provide text input or upload a file');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').classList.remove('active');
+
+            try {
+                let response;
+
+                if (selectedFile) {
+                    // Upload file
+                    const formData = new FormData();
+                    formData.append('file', selectedFile);
+                    formData.append('threshold', threshold);
+
+                    response = await fetch('/api/detect', {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    // Send text
+                    response = await fetch('/api/detect', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            text: textInput,
+                            threshold: threshold
+                        })
+                    });
+                }
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Detection failed');
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        });
+
+        // Display results
+        function displayResults(data) {
+            const results = document.getElementById('results');
+            const statusBadge = document.getElementById('statusBadge');
+            const contradictionList = document.getElementById('contradictionList');
+
+            // Update stats
+            document.getElementById('wordCount').textContent = data.word_count.toLocaleString();
+            document.getElementById('claimsCount').textContent = data.claims_count;
+            document.getElementById('contradictionsCount').textContent = data.contradictions_count;
+
+            // Status badge
+            if (data.status === 'consistent') {
+                statusBadge.innerHTML = '<div class="status-badge status-success">✅ No Contradictions Found</div>';
+            } else {
+                statusBadge.innerHTML = `<div class="status-badge status-warning">⚠️ ${data.contradictions_count} Contradiction(s) Detected</div>`;
+            }
+
+            // Contradiction list
+            if (data.contradictions && data.contradictions.length > 0) {
+                contradictionList.innerHTML = data.contradictions.map((c, i) => `
+                    <div class="contradiction-item" onclick="this.classList.toggle('expanded')">
+                        <div class="contradiction-header">
+                            <div>
+                                <div class="contradiction-title">
+                                    ${c.entity} - ${c.attribute}
+                                </div>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">
+                                    Click to expand details
+                                </p>
+                            </div>
+                            <div class="contradiction-delta">
+                                Δ ${c.delta.toFixed(2)}
+                            </div>
+                        </div>
+                        <div class="contradiction-details">
+                            <div class="detail-row">
+                                <div class="detail-label">Conflicting Values</div>
+                                <div class="detail-value">${c.values.join(' ↔️ ')}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Locations</div>
+                                <div class="detail-value">${c.locations.join(' → ')}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Source Texts</div>
+                                ${c.source_texts.map(text => `
+                                    <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(15, 23, 42, 0.6); border-radius: 0.25rem;">
+                                        "${text}"
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                contradictionList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                        <p>The narrative appears to be logically consistent.</p>
+                        <p style="margin-top: 0.5rem; font-size: 0.9rem;">
+                            No significant contradictions were detected.
+                        </p>
+                    </div>
+                `;
+            }
+
+            results.classList.add('active');
+            results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Clear button
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            document.getElementById('textInput').value = '';
+            fileInput.value = '';
+            selectedFile = null;
+            fileName.textContent = '';
+            document.getElementById('results').classList.remove('active');
+        });
+    </script>
+</body>
+
+</html>

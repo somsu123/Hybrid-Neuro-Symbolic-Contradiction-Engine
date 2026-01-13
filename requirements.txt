@@ -1,0 +1,23 @@
+# Hybrid Neuro-Symbolic Contradiction Engine
+# Python Dependencies
+
+# NLP Core
+spacy>=3.7.0
+sentence-transformers>=2.3.0
+transformers>=4.35.0
+torch>=2.1.0
+
+# CLI and Progress
+click>=8.1.0
+tqdm>=4.66.0
+
+# Data Processing
+numpy>=1.24.0
+
+# Utilities
+python-dotenv>=1.0.0
+
+# Web Server (for Render deployment)
+flask>=3.0.0
+flask-cors>=4.0.0
+gunicorn>=21.2.0
